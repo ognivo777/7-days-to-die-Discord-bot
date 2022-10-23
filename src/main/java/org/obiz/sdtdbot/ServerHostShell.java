@@ -21,15 +21,17 @@ public class ServerHostShell {
     private static final Logger log = LogManager.getLogger(ServerHostShell.class);
     private final PrintStream commander;
     private final Thread readShellOutThread;
-    private final int WAIT_PERIOD = 300;
+    private final int WAIT_PERIOD = 3000;
     private final String prompt;
     private ExecutorService executor = Executors.newSingleThreadExecutor();
     private BlockingDeque<String> shellResponse = new LinkedBlockingDeque<>();
     private JSch jSch;
     private Session session;
     private ChannelShell shell;
+    private Config config;
 
     public ServerHostShell(Config config) {
+        this.config = config;
         jSch = new JSch();
         try {
             session = jSch.getSession(config.getSshUser(), config.getHost(), config.getPort());
@@ -71,7 +73,7 @@ public class ServerHostShell {
                 log.info(line);
             }
 //            welcome = executeCommand("").get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS).get();
-            prompt = executeCommandWithSimpleResults("").get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS);
+            prompt = executeCommandWithSimpleResults("", false).get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS);
             log.info("welcome string = <" + prompt + ">");
 
         } catch (JSchException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
@@ -80,8 +82,8 @@ public class ServerHostShell {
         }
     }
 
-    public CompletableFuture<String> executeCommandWithSimpleResults(String cmd) {
-        CompletableFuture<Optional<List<String>>> optionalCompletableFuture = executeCommand(cmd);
+    public CompletableFuture<String> executeCommandWithSimpleResults(String cmd, boolean sudo) {
+        CompletableFuture<Optional<List<String>>> optionalCompletableFuture = executeCommand(cmd, sudo);
         return CompletableFuture.supplyAsync(() -> {
             try {
                 return String.join("\n", optionalCompletableFuture.get(WAIT_PERIOD, TimeUnit.MILLISECONDS).get());
@@ -90,7 +92,7 @@ public class ServerHostShell {
             }
         }, executor);
     }
-    public CompletableFuture<Optional<List<String>>> executeCommand(String cmd) {
+    public CompletableFuture<Optional<List<String>>> executeCommand(String cmd, boolean sudo) {
         log.info("Command: " + cmd);
         return CompletableFuture.supplyAsync(() -> {
             shellResponse.clear();
@@ -103,6 +105,10 @@ public class ServerHostShell {
             try {
                 String commandSelf = shellResponse.take(); //input reply
                 Thread.sleep(WAIT_PERIOD);
+                String nextLine = shellResponse.peek();
+                if(sudo && nextLine!=null && nextLine.startsWith("[sudo]")) {
+                    commander.println(config.getSshPasswd());
+                }
                 //TODO вместо таймаута использовать появление prompt мессажэ как признак того как исполнение закончилось
                 // - но это не подходит при открытии telnet и прочих интерактивных. Возможно стоит параметризовать.
             } catch (InterruptedException e) {
