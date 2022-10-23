@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36}:%line - %msg%n"/>
+        </Console>
+        <RollingFile
+                name="rollingFile"
+                fileName="sdtd-bot-rolling.log"
+                filePattern="sdtd-bot-rolling.%i.log.gz"
+                ignoreExceptions="false">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36}:%line - %msg%n"/>
+            <Policies>
+                <SizeBasedTriggeringPolicy size="10MB" />
+<!--                <OnStartupTriggeringPolicy />-->
+            </Policies>
+            <DefaultRolloverStrategy max="5" />
+        </RollingFile>
+        <!--<File name="File" fileName="sdtd-bot.log">-->
+            <!--<PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>-->
+        <!--</File>-->
+    </Appenders>
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="rollingFile"/>
+        </Root>
+        <Logger name="org.obiz.sdtdbot" level="DEBUG"
+                additivity="false">
+            <Appender-ref ref="rollingFile" level="INFO" />
+            <Appender-ref ref="Console" level="DEBUG" />
+        </Logger>
+    </Loggers>
+</Configuration>
