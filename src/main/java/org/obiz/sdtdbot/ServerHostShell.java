@@ -18,7 +18,8 @@ public class ServerHostShell {
     private static final Logger log = LogManager.getLogger(ServerHostShell.class);
     private final PrintStream commander;
     private final Thread readShellOutThread;
-    private final int WAIT_PERIOD = 3000;
+    private final int FIRST_BYTE_WAIT_PERIOD = 100;
+    private final int WAIT_PERIOD = 300;
     private final String prompt;
     private ExecutorService executor = Executors.newSingleThreadExecutor();
     private BlockingDeque<String> shellResponse = new LinkedBlockingDeque<>();
@@ -91,12 +92,22 @@ public class ServerHostShell {
                 return ShellCommandResult.error("Error on send ssh command.");
             }
             try {
-                String commandSelf = shellResponse.take(); //input reply
-                Thread.sleep(WAIT_PERIOD);
-                String nextLine = shellResponse.peek();
+                shellResponse.take(); //eat input reply
+                //wait for first data
+                String nextLine = null;
+                Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
+                for (int i = 0; i < 5; i++) {
+                    nextLine = shellResponse.peek();
+                    if(nextLine!=null) {
+                        break;
+                    }
+                    Thread.sleep(WAIT_PERIOD); //a little greater time period
+                }
+
                 if(sudo && nextLine!=null && nextLine.startsWith("[sudo]")) {
                     commander.println(config.getSshPasswd());
                 }
+
                 //TODO вместо таймаута использовать появление prompt мессажэ как признак того как исполнение закончилось
                 // - но это не подходит при открытии telnet и прочих интерактивных. Возможно стоит параметризовать.
             } catch (InterruptedException e) {

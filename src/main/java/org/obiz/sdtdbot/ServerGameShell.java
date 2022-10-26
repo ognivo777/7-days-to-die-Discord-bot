@@ -1,5 +1,6 @@
 package org.obiz.sdtdbot;
 
+import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.Subscribe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -13,18 +14,20 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class ServerGameShell {
+public class ServerGameShell implements ServerStartedListener {
     private static final Logger log = LogManager.getLogger(ServerGameShell.class);
     private final Config config;
     private final Timer timer;
     private ServerHostShell shell;
+    private AsyncEventBus eventBus;
     private boolean isClosed = false;
     private AtomicBoolean isAlive = new AtomicBoolean();
-    private AtomicInteger stateCounter = new AtomicInteger(0);
+    private AtomicInteger stateCounter = new AtomicInteger(3);
 
-    public ServerGameShell(Config config, ServerHostShell shell) throws Exception {
+    public ServerGameShell(Config config, ServerHostShell shell, AsyncEventBus eventBus) throws Exception {
         this.config = config;
         this.shell = shell;
+        this.eventBus = eventBus;
         //todo добавить в параметры Consumer<String> для отправки сообщений
 
             openTelnetWithPassword();
@@ -39,7 +42,9 @@ public class ServerGameShell {
                         if(isAlive.compareAndSet(!startsWithDay, startsWithDay)) {
                             //isAlive takes new value, so state was changed
                             if(stateCounter.getAndSet(0) > 2) {
-                                log.info("State changed to: " + (isAlive.get()?"connected":"connection lost"));
+                                String message = "State changed to: " + (isAlive.get() ? "connected" : "connection lost");
+                                log.info(message);
+                                eventBus.post(new Events.DiscordMessage(message));
                             }
 
                         } else {
@@ -75,7 +80,7 @@ public class ServerGameShell {
                 public void run() {
                         openTelnetWithPassword();
                 }
-            }, 40 *1000);
+            }, 90 *1000);
 
     }
 

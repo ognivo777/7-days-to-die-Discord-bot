@@ -3,10 +3,7 @@ package org.obiz.sdtdbot;
 import com.google.common.eventbus.AsyncEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.obiz.sdtdbot.commands.InfoCommand;
-import org.obiz.sdtdbot.commands.KillGameServerCommand;
-import org.obiz.sdtdbot.commands.RunGameServerCommand;
-import org.obiz.sdtdbot.commands.StopCommand;
+import org.obiz.sdtdbot.commands.*;
 
 import java.time.Instant;
 import java.util.concurrent.Executors;
@@ -40,23 +37,28 @@ public class Bot {
     private Bot start() {
         log.info("Version " + BOT_VERSION);
         try {
+            //init main mechanics
             hostShell = new ServerHostShell(config);
             hostShellForGame = new ServerHostShell(config);
-            gameShell = new ServerGameShell(config, hostShellForGame);
+            gameShell = new ServerGameShell(config, hostShellForGame, eventBus);
+            discord = new Discord(config).init();
+
+            //connect each other with event bus
             eventBus.register(hostShell);
             eventBus.register(hostShellForGame);
             eventBus.register(gameShell);
-            discord = new Discord(config).init();
+            eventBus.register(discord);
+
             //add commands
             discord.addCommand(new InfoCommand(this));
             discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
+            discord.addCommand(new GetTimeCommand(gameShell));
             discord.addCommand(new RunGameServerCommand(hostShell, config, eventBus));
             discord.addCommand(new KillGameServerCommand(hostShell, config));
 
         } catch (Exception e) {
             log.error("Error!", e);
             stop();
-//            throw new RuntimeException(e);
         }
         return this;
     }
