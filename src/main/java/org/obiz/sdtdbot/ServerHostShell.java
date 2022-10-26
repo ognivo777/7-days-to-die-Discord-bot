@@ -9,9 +9,6 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.*;
 
 /**
@@ -73,7 +70,7 @@ public class ServerHostShell {
                 log.info(line);
             }
 //            welcome = executeCommand("").get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS).get();
-            prompt = executeCommandWithSimpleResults("", false).get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS);
+            prompt = executeCommand("", false).get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS).lastLine();
             log.info("welcome string = <" + prompt + ">");
 
         } catch (JSchException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
@@ -82,26 +79,27 @@ public class ServerHostShell {
         }
     }
 
-    public CompletableFuture<String> executeCommandWithSimpleResults(String cmd, boolean sudo) {
-        CompletableFuture<Optional<List<String>>> optionalCompletableFuture = executeCommand(cmd, sudo);
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                return String.join("\n", optionalCompletableFuture.get(WAIT_PERIOD, TimeUnit.MILLISECONDS).get());
-            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                throw new RuntimeException(e);
-            }
-        }, executor);
-    }
+//    public CompletableFuture<String> executeCommandWithSimpleResults(String cmd, boolean sudo) {
+//        CompletableFuture<ShellCommandResult> optionalCompletableFuture = executeCommand(cmd, sudo);
+//        return CompletableFuture.supplyAsync(() -> {
+//            try {
+//                return String.join("\n", optionalCompletableFuture.get(WAIT_PERIOD, TimeUnit.MILLISECONDS).get());
+//            } catch (InterruptedException | ExecutionException | TimeoutException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }, executor);
+//    }
 
-    public CompletableFuture<Optional<List<String>>> executeCommand(String cmd, boolean sudo) {
+    public CompletableFuture<ShellCommandResult> executeCommand(String cmd, boolean sudo) {
         log.info("Command: " + cmd);
+
         return CompletableFuture.supplyAsync(() -> {
             shellResponse.clear();
             commander.println(cmd);
             commander.flush();
             if (commander.checkError()) {
                 log.error("Error on send ssh command.");
-                return Optional.empty();
+                return ShellCommandResult.error("Error on send ssh command.");
             }
             try {
                 String commandSelf = shellResponse.take(); //input reply
@@ -114,10 +112,11 @@ public class ServerHostShell {
                 // - но это не подходит при открытии telnet и прочих интерактивных. Возможно стоит параметризовать.
             } catch (InterruptedException e) {
                 log.error(e);
-                throw new RuntimeException(e);
+                throw new CompletionException(e);
             }
 //            return String.join("\n", shellResponse);
-            return Optional.of(new ArrayList<>(shellResponse));
+//            return Optional.of(new ArrayList<>(shellResponse));
+            return ShellCommandResult.success(shellResponse);
         }, executor);
     }
 

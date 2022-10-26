@@ -22,8 +22,12 @@ public class RunGameServerCommand extends Command {
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
         //todo проверить что сервер лежит
-        shell.executeCommandWithSimpleResults(config.getRunServerCmd(), true).thenAccept(s -> {
+        //todo отдавать сразу ответ "Выполняем", а потом обновлять его на актуальный результат.
+        //todo добавить шину, кидать туда евент "restart telnet" по окончании старта сервера (отловлена строчка "Done!" не ранее чем ерез N секнуд - замерить). Подписать на него ServerGameShell
+        //todo подписаться на логи и отслеживать определённые строки для фиксации успешного запуска.
+        shell.executeCommand(config.getRunServerCmd(), true).thenAccept(s -> {
             log.info("Start server logs:\n" + s);
+            consumer.accept(s.isSuccess()?"Done":s.toString());
         });
     }
 

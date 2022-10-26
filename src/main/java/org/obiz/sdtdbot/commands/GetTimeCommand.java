@@ -22,8 +22,8 @@ public class GetTimeCommand extends Command {
 
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
-        shell.executeCommandWithSimpleResults("gt").thenAccept(gtResult -> {
-            gtResult = gtResult.split("\n")[0].trim();
+        shell.executeCommand("gt").thenAccept(commandResult -> {
+            String gtResult = commandResult.lastLine().split("\n")[0].trim();
             log.info("gtResult: " + gtResult);
             Matcher m = gt_parse.matcher(gtResult);
             if (m.matches()) {
