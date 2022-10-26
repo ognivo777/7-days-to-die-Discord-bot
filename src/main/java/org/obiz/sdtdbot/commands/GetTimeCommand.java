@@ -38,6 +38,9 @@ public class GetTimeCommand extends Command {
                 }
             }
             consumer.accept(gtResult);
+        }).exceptionally(throwable -> {
+            log.error("Error on GT command: " +throwable.getMessage(), throwable);
+            return null;
         });
     }
 }

@@ -92,6 +92,7 @@ public class ServerHostShell {
             }
         }, executor);
     }
+
     public CompletableFuture<Optional<List<String>>> executeCommand(String cmd, boolean sudo) {
         log.info("Command: " + cmd);
         return CompletableFuture.supplyAsync(() -> {
