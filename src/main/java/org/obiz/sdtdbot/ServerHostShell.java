@@ -79,17 +79,6 @@ public class ServerHostShell {
         }
     }
 
-//    public CompletableFuture<String> executeCommandWithSimpleResults(String cmd, boolean sudo) {
-//        CompletableFuture<ShellCommandResult> optionalCompletableFuture = executeCommand(cmd, sudo);
-//        return CompletableFuture.supplyAsync(() -> {
-//            try {
-//                return String.join("\n", optionalCompletableFuture.get(WAIT_PERIOD, TimeUnit.MILLISECONDS).get());
-//            } catch (InterruptedException | ExecutionException | TimeoutException e) {
-//                throw new RuntimeException(e);
-//            }
-//        }, executor);
-//    }
-
     public CompletableFuture<ShellCommandResult> executeCommand(String cmd, boolean sudo) {
         log.info("Command: " + cmd);
 
@@ -114,8 +103,6 @@ public class ServerHostShell {
                 log.error(e);
                 throw new CompletionException(e);
             }
-//            return String.join("\n", shellResponse);
-//            return Optional.of(new ArrayList<>(shellResponse));
             return ShellCommandResult.success(shellResponse);
         }, executor);
     }
@@ -131,7 +118,7 @@ public class ServerHostShell {
                 session.disconnect();
                 log.debug("readShellOutThread.interrupt();");
                 readShellOutThread.interrupt();
-            }).get(3, TimeUnit.SECONDS);
+            }).get(3, TimeUnit.SECONDS); //todo уменьшить задержку! ждать 3 сек первой строки, переставать ждать если пришла/, а дальше ждать по пол секунды максимум
             log.info("ServerHostShell close done.");
         } catch (InterruptedException | ExecutionException e) {
             log.error("Can't stop ssh connection: " + e.getMessage(), e);

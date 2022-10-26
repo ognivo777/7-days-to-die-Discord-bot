@@ -1,5 +1,6 @@
 package org.obiz.sdtdbot;
 
+import com.google.common.eventbus.Subscribe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,21 +15,21 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class ServerGameShell {
     private static final Logger log = LogManager.getLogger(ServerGameShell.class);
+    private final Config config;
+    private final Timer timer;
     private ServerHostShell shell;
     private boolean isClosed = false;
     private AtomicBoolean isAlive = new AtomicBoolean();
     private AtomicInteger stateCounter = new AtomicInteger(0);
 
-    public ServerGameShell(Config config, ServerHostShell shell) {
+    public ServerGameShell(Config config, ServerHostShell shell) throws Exception {
+        this.config = config;
+        this.shell = shell;
         //todo добавить в параметры Consumer<String> для отправки сообщений
-        try {
-            this.shell = shell;
-            String s1 = shell.executeCommand("telnet 127.0.0.1 " + config.getTelnetPort(), false).get().lastLine();
-            log.info("telnetWelcomeMessages: " + s1);
-            String s2 =  shell.executeCommand(config.getTelnetPasswd(), false).get().lastLine();
-            log.info("telnetWelcomeMessages: " + s2);
 
-            Timer timer = new Timer();
+            openTelnetWithPassword();
+
+            timer = new Timer();
             timer.scheduleAtFixedRate(new TimerTask() {
                 @Override
                 public void run() {
@@ -50,9 +51,32 @@ public class ServerGameShell {
             }, 5 *1000, 10 *1000);
 
             //todo add handler for string "Connection closed by foreign host." - this means disconnects from telnet
+
+    }
+
+    private void openTelnetWithPassword() {
+        try {
+            String s1 = shell.executeCommand("telnet 127.0.0.1 " + config.getTelnetPort(), false).get().lastLine();
+            log.info("telnetWelcomeMessages: " + s1);
+            String s2 =  shell.executeCommand(config.getTelnetPasswd(), false).get().lastLine();
+            log.info("telnetWelcomeMessages: " + s2);
+            isAlive.set(true);
         } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException(e);
+            isAlive.set(false);
+            log.error("Open telnet error:" + e.getMessage(), e);
         }
+    }
+
+    @Subscribe
+    public void onServerStart(Events.ServerStarted event) {
+            log.info("Message <ServerStarted> received!");
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                        openTelnetWithPassword();
+                }
+            }, 40 *1000);
+
     }
 
     public CompletableFuture<ShellCommandResult> executeCommand(String cmd) {

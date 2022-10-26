@@ -1,5 +1,6 @@
 package org.obiz.sdtdbot;
 
+import com.google.common.eventbus.AsyncEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.obiz.sdtdbot.commands.InfoCommand;
@@ -8,10 +9,12 @@ import org.obiz.sdtdbot.commands.RunGameServerCommand;
 import org.obiz.sdtdbot.commands.StopCommand;
 
 import java.time.Instant;
+import java.util.concurrent.Executors;
 
 public class Bot {
     public static final String BOT_VERSION = "2022.10";
     private static final Logger log = LogManager.getLogger(Bot.class);
+    private final AsyncEventBus eventBus;
 
     private Instant started;
     private Config config;
@@ -22,6 +25,7 @@ public class Bot {
     private boolean isStopped = false;
 
     public static void main(String[] args) {
+        //todo добавить DI через guice - конфиги, шину
         log.info("Hello!");
         Config config = new Config(args);
         new Bot(config).start();
@@ -30,6 +34,7 @@ public class Bot {
     public Bot(Config config) {
         this.started = Instant.now();
         this.config = config;
+        eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
     }
 
     private Bot start() {
@@ -38,11 +43,14 @@ public class Bot {
             hostShell = new ServerHostShell(config);
             hostShellForGame = new ServerHostShell(config);
             gameShell = new ServerGameShell(config, hostShellForGame);
+            eventBus.register(hostShell);
+            eventBus.register(hostShellForGame);
+            eventBus.register(gameShell);
             discord = new Discord(config).init();
             //add commands
             discord.addCommand(new InfoCommand(this));
             discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
-            discord.addCommand(new RunGameServerCommand(hostShell, config));
+            discord.addCommand(new RunGameServerCommand(hostShell, config, eventBus));
             discord.addCommand(new KillGameServerCommand(hostShell, config));
 
         } catch (Exception e) {

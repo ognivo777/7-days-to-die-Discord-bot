@@ -22,7 +22,9 @@ public class KillGameServerCommand extends Command {
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
         //todo проверить что сервер НЕ лежит
-        //todo отдавать сразу ответ "Выполняем", а потом обновлять его на актуальный результат.
+        //todo отдавать сразу ответ "Выполняем", а потом обновлять его на актуальный результат,
+        //     для этого вернуть отсюда какой-то объект, через который можно выполнить обновление.
+        consumer.accept("Try to do that..");
         shell.executeCommand(config.getKillServerCmd(), true).thenAccept(s -> {
             log.info("Kill server logs:\n" + s);
             consumer.accept("Done.");
