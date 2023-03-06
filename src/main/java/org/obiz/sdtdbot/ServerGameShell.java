@@ -54,7 +54,7 @@ public class ServerGameShell implements ServerStartedListener {
                             log.info(message);
                             eventBus.post(new Events.DiscordMessage(message));
                         }
-
+                        //TODO после перехода в состояние отключённого не пытаться выполнять gt
                     } else {
                         //isAlive keep old value, so state was NOT changed
                         sameStateCounter.incrementAndGet();

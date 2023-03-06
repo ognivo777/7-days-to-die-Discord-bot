@@ -50,6 +50,13 @@ public class ShellCommandResult {
         return "";
     }
 
+    public String mergedLines() {
+        if(result!=null && !result.isEmpty()) {
+            return String.join("\n", result);
+        }
+        return "";
+    }
+
     @Override
     public String toString() {
         if(result!=null)

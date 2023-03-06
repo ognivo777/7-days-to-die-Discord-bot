@@ -46,8 +46,9 @@ public class Bot {
                         discord.addCommand(new InfoCommand(this));
                         discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
                         discord.addCommand(new GetTimeCommand(gameShell));
+                        discord.addCommand(new KickAllCommand(gameShell, config));
                         discord.addCommand(new RunGameServerCommand(hostShell, config, eventBus));
-                        discord.addCommand(new KillGameServerCommand(hostShell, config));
+                        discord.addCommand(new KillGameServerCommand(gameShell, hostShell, config));
                         eventBus.register(discord);
                     })
                     .exceptionally(throwable -> {
