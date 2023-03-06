@@ -5,7 +5,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.obiz.sdtdbot.Config;
-import org.obiz.sdtdbot.Events;
+import org.obiz.sdtdbot.bus.Events;
 import org.obiz.sdtdbot.ServerHostShell;
 
 import java.util.function.Consumer;

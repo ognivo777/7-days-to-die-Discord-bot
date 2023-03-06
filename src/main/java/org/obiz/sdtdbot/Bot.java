@@ -38,24 +38,32 @@ public class Bot {
         log.info("Version " + BOT_VERSION);
         try {
             //init main mechanics
-            hostShell = new ServerHostShell(config);
+
+            new Discord(config).init()
+                    .thenAccept(d -> {
+                        discord = d;
+                        //add commands
+                        discord.addCommand(new InfoCommand(this));
+                        discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
+                        discord.addCommand(new GetTimeCommand(gameShell));
+                        discord.addCommand(new RunGameServerCommand(hostShell, config, eventBus));
+                        discord.addCommand(new KillGameServerCommand(hostShell, config));
+                        eventBus.register(discord);
+                    })
+                    .exceptionally(throwable -> {
+                        log.error("Error: ", throwable);
+                        System.exit(0); //todo fix this dirty hack
+                        return null;
+                    });
+
+            hostShell = new ServerHostShell(config); //need to game start and stop commands
             hostShellForGame = new ServerHostShell(config);
             gameShell = new ServerGameShell(config, hostShellForGame, eventBus);
-            discord = new Discord(config).init();
 
-            //connect each other with event bus
+//            connect each other with event bus
             eventBus.register(hostShell);
             eventBus.register(hostShellForGame);
             eventBus.register(gameShell);
-            eventBus.register(discord);
-
-            //add commands
-            discord.addCommand(new InfoCommand(this));
-            discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
-            discord.addCommand(new GetTimeCommand(gameShell));
-            discord.addCommand(new RunGameServerCommand(hostShell, config, eventBus));
-            discord.addCommand(new KillGameServerCommand(hostShell, config));
-
         } catch (Exception e) {
             log.error("Error!", e);
             stop();

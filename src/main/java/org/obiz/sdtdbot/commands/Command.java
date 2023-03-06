@@ -46,12 +46,16 @@ public abstract class Command {
         this.predicate = predicate;
     }
 
+    /** Creates and register on server Discord slash command. Also register typical listener for the command with
+     * role access checks.
+     *
+     * @param api
+     */
     public void start(DiscordApi api) {
         slashCommand =  SlashCommand.with(command, description).createGlobal(api).join();
-        log.debug("Command '" +command+ "' accepted!");
+        log.debug("Command '" + command + "' accepted!");
         api.addSlashCommandCreateListener(event -> {
             SlashCommandInteraction slashCommandInteraction = event.getSlashCommandInteraction();
-
             if (slashCommandInteraction.getCommandName().equals(command)) {
                 //role-based access control evaluations
                 boolean userAllowedByRole = false;
@@ -85,9 +89,10 @@ public abstract class Command {
         });
     }
 
-    private void sendResponse(SlashCommandInteraction interaction, String s) {
+    private void sendResponse(SlashCommandInteraction interaction, String response) {
+        log.debug("Command simple response: " + response);
         interaction.createImmediateResponder()
-                .setContent(s)
+                .setContent(response)
                 .setFlags(MessageFlag.EPHEMERAL) // Only visible for the user which invoked the command
                 .respond();
     }

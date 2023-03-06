@@ -4,6 +4,8 @@ import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.Subscribe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.obiz.sdtdbot.bus.Events;
+import org.obiz.sdtdbot.bus.ServerStartedListener;
 
 import java.util.Timer;
 import java.util.TimerTask;
@@ -22,41 +24,44 @@ public class ServerGameShell implements ServerStartedListener {
     private AsyncEventBus eventBus;
     private boolean isClosed = false;
     private AtomicBoolean isAlive = new AtomicBoolean();
-    private AtomicInteger stateCounter = new AtomicInteger(3);
+    private AtomicInteger sameStateCounter = new AtomicInteger(3);
 
     public ServerGameShell(Config config, ServerHostShell shell, AsyncEventBus eventBus) throws Exception {
+        log.debug("Starting ServerGameShell!.....");
         this.config = config;
         this.shell = shell;
         this.eventBus = eventBus;
         //todo добавить в параметры Consumer<String> для отправки сообщений
+        openTelnetWithPassword();
 
-            openTelnetWithPassword();
+        timer = new Timer();
+        startWatchDog(shell, eventBus);
+        //todo add handler for string "Connection closed by foreign host." - this means disconnects from telnet
 
-            timer = new Timer();
-            timer.scheduleAtFixedRate(new TimerTask() {
-                @Override
-                public void run() {
-                    shell.executeCommand("gt", false).thenAccept(res -> {
-                        boolean startsWithDay = res.lastLine().startsWith("Day");
+    }
+
+    private void startWatchDog(ServerHostShell shell, AsyncEventBus eventBus) {
+        timer.scheduleAtFixedRate(new TimerTask() {
+            @Override
+            public void run() {
+                shell.executeCommand("gt", false).thenAccept(res -> {
+                    boolean startsWithDay = res.lastLine().startsWith("Day");
 //                        isAlive.set(startsWithDay);
-                        if(isAlive.compareAndSet(!startsWithDay, startsWithDay)) {
-                            //isAlive takes new value, so state was changed
-                            if(stateCounter.getAndSet(0) > 2) {
-                                String message = "State changed to: " + (isAlive.get() ? "connected" : "connection lost");
-                                log.info(message);
-                                eventBus.post(new Events.DiscordMessage(message));
-                            }
-
-                        } else {
-                            //isAlive keep old value, so state was NOT changed
-                            stateCounter.incrementAndGet();
+                    if(isAlive.compareAndSet(!startsWithDay, startsWithDay)) {
+                        //isAlive takes new value, so state was changed
+                        if(sameStateCounter.getAndSet(0) > 2) {
+                            String message = "State changed to: " + (isAlive.get() ? "connected" : "connection lost");
+                            log.info(message);
+                            eventBus.post(new Events.DiscordMessage(message));
                         }
-                    });
-                }
-            }, 5 *1000, 10 *1000);
 
-            //todo add handler for string "Connection closed by foreign host." - this means disconnects from telnet
-
+                    } else {
+                        //isAlive keep old value, so state was NOT changed
+                        sameStateCounter.incrementAndGet();
+                    }
+                });
+            }
+        }, 5 *1000, 10 *1000);
     }
 
     private void openTelnetWithPassword() {

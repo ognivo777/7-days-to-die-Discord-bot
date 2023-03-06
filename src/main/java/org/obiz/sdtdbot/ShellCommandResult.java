@@ -23,17 +23,17 @@ public class ShellCommandResult {
         return new ShellCommandResult(true, result);
     }
 
-    public static ShellCommandResult error(List<String> result) {
-        return new ShellCommandResult(false, result);
-    }
+//    public static ShellCommandResult error(List<String> result) {
+//        return new ShellCommandResult(false, result);
+//    }
 
     public static ShellCommandResult error(String result) {
         return new ShellCommandResult(false, result);
     }
-
-    public static ShellCommandResult success(BlockingDeque<String> shellResponse) {
-        return success(new ArrayList<>(shellResponse));
-    }
+//
+//    public static ShellCommandResult success(BlockingDeque<String> shellResponse) {
+//        return success(new ArrayList<>(shellResponse));
+//    }
 
     public boolean isSuccess() {
         return isSuccess;
