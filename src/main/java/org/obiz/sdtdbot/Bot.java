@@ -42,7 +42,7 @@ public class Bot {
             new Discord(config).init()
                     .thenAccept(d -> {
                         discord = d;
-                        //add commands
+                        //add commands.. -убрать в класс Discord? или и тут норм?
                         discord.addCommand(new InfoCommand(this));
                         discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
                         discord.addCommand(new GetTimeCommand(gameShell));
@@ -58,7 +58,7 @@ public class Bot {
                     });
 
             hostShell = new ServerHostShell(config); //need to game start and stop commands
-            hostShellForGame = new ServerHostShell(config);
+            hostShellForGame = new ServerHostShell(config); //base for game shell
             gameShell = new ServerGameShell(config, hostShellForGame, eventBus);
 
 //            connect each other with event bus

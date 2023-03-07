@@ -10,6 +10,8 @@ public class ServerFileTailer {
     private ServerHostShell shell;
     private AsyncEventBus eventBus;
 
+    /** какие задачи выполняет? Мониторинг лога на предмет поиска евентов и отправки их в чат?
+     */
 
     public ServerFileTailer(Config config, ServerHostShell shell, AsyncEventBus eventBus) {
         this.config = config;

@@ -1,9 +1,17 @@
 plugins {
     id 'java'
     id 'application'
+    id 'idea'
+}
+
+idea {
+    module {
+        downloadJavadoc = true;
+    }
 }
 
 sourceCompatibility = 1.9
+targetCompatibility = JavaVersion.VERSION_1_9
 
 compileJava.options.encoding = 'UTF-8'
 compileTestJava.options.encoding = 'UTF-8'
@@ -38,4 +46,16 @@ dependencies {
 test {
     useJUnitPlatform()
 }
-targetCompatibility = JavaVersion.VERSION_1_9
+
+jar {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    manifest {
+        attributes 'Main-Class': 'org.obiz.sdtdbot.Bot'
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    } {
+        exclude 'META-INF/*.RSA', 'META-INF/*.SF', 'META-INF/*.DSA'
+    }
+}
+
