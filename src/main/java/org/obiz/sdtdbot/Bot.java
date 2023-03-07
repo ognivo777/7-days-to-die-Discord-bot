@@ -39,6 +39,11 @@ public class Bot {
         try {
             //init main mechanics
 
+            hostShell = new ServerHostShell(config); //need to game start and stop commands
+            hostShellForGame = new ServerHostShell(config); //base for game shell
+            gameShell = new ServerGameShell(config, hostShellForGame, eventBus);
+
+            //it's important to run after init all shells!
             new Discord(config).init()
                     .thenAccept(d -> {
                         discord = d;
@@ -56,10 +61,6 @@ public class Bot {
                         System.exit(0); //todo fix this dirty hack
                         return null;
                     });
-
-            hostShell = new ServerHostShell(config); //need to game start and stop commands
-            hostShellForGame = new ServerHostShell(config); //base for game shell
-            gameShell = new ServerGameShell(config, hostShellForGame, eventBus);
 
 //            connect each other with event bus
             eventBus.register(hostShell);
