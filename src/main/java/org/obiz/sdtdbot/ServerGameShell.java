@@ -70,6 +70,7 @@ public class ServerGameShell implements ServerStartedListener {
             log.info("telnetWelcomeMessages: " + s1);
             String s2 =  shell.executeCommand(config.getTelnetPasswd(), false).get().lastLine();
             log.info("telnetWelcomeMessages: " + s2);
+            String s3 =  shell.executeCommand("loglevel ALL false", false).get().lastLine();
             isAlive.set(true);
         } catch (InterruptedException | ExecutionException e) {
             isAlive.set(false);

@@ -13,6 +13,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
 
 /**
  * core shh server shell
@@ -27,6 +29,7 @@ public class ServerHostShell {
     private final String prompt;
     private ExecutorService executor = Executors.newSingleThreadExecutor();
     private BlockingDeque<String> shellResponse = new LinkedBlockingDeque<>();
+    private final ReentrantLock commandExecutionLock = new ReentrantLock();
     private JSch jSch;
     private Session session;
     private ChannelShell shell;
@@ -48,7 +51,7 @@ public class ServerHostShell {
             readShellOutThread = new Thread(() -> {
                 try {
                     log.info("Constantly read output thread started.");
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(shell.getInputStream(), "windows-1251"));
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(shell.getInputStream(), StandardCharsets.UTF_8.name()));
                     while (true) {
                         String line = bufferedReader.readLine();
                         if (line == null) {
@@ -88,121 +91,100 @@ public class ServerHostShell {
         log.info("Command to run on HOST Shell: " + cmd);
 
         return CompletableFuture.supplyAsync(() -> {
-            shellResponse.clear();
-            commander.println(cmd);
-            commander.flush();
-            if (commander.checkError()) {
-                log.error("Error on send ssh command.");
-                return ShellCommandResult.error("Error on send ssh command.");
-            } else {
-                try {
-                    shellResponse.take(); //eat input reply
-                    //wait for first data
-                    String nextLine = null;
-                    Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
-                    //wait for first line
-                    for (int i = 0; i < 5; i++) {
-                        nextLine = shellResponse.peek();
-                        if (nextLine != null) {
-                            break;
+            try {
+                commandExecutionLock.lock();
+                shellResponse.clear();
+                commander.println(cmd);
+                commander.flush();
+                if (commander.checkError()) {
+                    log.error("Error on send ssh command.");
+                    return ShellCommandResult.error("Error on send ssh command.");
+                } else {
+                    try {
+                        shellResponse.take(); //eat input reply
+                        //wait for first data
+                        String nextLine = null;
+                        Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
+                        //wait for first line
+                        for (int i = 0; i < 5; i++) {
+                            nextLine = shellResponse.peek();
+                            if (nextLine != null) {
+                                break;
+                            }
+                            Thread.sleep(WAIT_PERIOD); //a little greater time period
                         }
-                        Thread.sleep(WAIT_PERIOD); //a little greater time period
-                    }
 
-                    //if server asks for password - type them
-                    if (sudo && nextLine != null && nextLine.startsWith("[sudo]")) {
-                        commander.println(config.getSshPasswd());
-                    }
-
-                    //TODO вместо таймаута использовать появление prompt мессажэ как признак того как исполнение закончилось
-                    // - но это не подходит при открытии telnet и прочих интерактивных. Возможно стоит параметризовать.
-                    List<String> lines = new ArrayList<>();
-                    while (true) {
-                        String poll = shellResponse.poll(LONG_COMMAND_RESULT_WAIT_PERIOD, TimeUnit.MICROSECONDS);
-                        if(!Strings.isNullOrEmpty(poll)) {
-                            lines.add(poll);
-                        } else {
-                            break;
+                        //if server asks for password - type them
+                        if (sudo && nextLine != null && nextLine.startsWith("[sudo]")) {
+                            commander.println(config.getSshPasswd());
                         }
-                    }
-                    return ShellCommandResult.success(lines);
-                } catch (InterruptedException e) {
-                    log.error(e);
-                    throw new CompletionException(e);
+
+                        //TODO вместо таймаута использовать появление prompt мессажэ как признак того как исполнение закончилось
+                        // - но это не подходит при открытии telnet и прочих интерактивных. Возможно стоит параметризовать.
+                        List<String> lines = new ArrayList<>();
+                        while (true) {
+                            String poll = shellResponse.poll(LONG_COMMAND_RESULT_WAIT_PERIOD, TimeUnit.MICROSECONDS);
+                            if (!Strings.isNullOrEmpty(poll)) {
+                                lines.add(poll);
+                            } else {
+                                break;
+                            }
+                        }
+                        return ShellCommandResult.success(lines);
+                    } catch (InterruptedException e) {
+                        log.error(e);
+                        throw new CompletionException(e);
 //                    return ShellCommandResult.error("");
+                    }
+                    //return ShellCommandResult.success(shellResponse);
                 }
-                //return ShellCommandResult.success(shellResponse);
+            } finally {
+                commandExecutionLock.unlock();
             }
         }, executor); //using local single thread executor guarantees one by one execution without collisions
     }
 
-//    public CompletableFuture<ShellCommandResult> executeCommand4(String cmd, boolean sudo) {
-//        return CompletableFuture.supplyAsync(() -> {
-//            log.debug("Starting processing command..");
-//            List<String> lines = new ArrayList<>();
-//            try {
-//                BlockingQueue<String> queue = subscribeCommand(cmd, sudo);
-//                while (true) {
-//                    String line = queue.poll(WAIT_PERIOD, TimeUnit.MILLISECONDS);
-//                    if(!Strings.isNullOrEmpty(line)) {
-//                        lines.add(line);
-//                    } else {
-//                        break;
-//                    }
-//                }
-//            } catch (InterruptedException e) {
-//                return ShellCommandResult.error(e.getMessage());
-//            }
-//            return ShellCommandResult.success(lines);
-//        }); //here we not use local executor pull, because it used  subsequently in subscribeCommand()
-//    }
-//
-//
-//    public BlockingQueue<String> subscribeCommand(String cmd, boolean sudo) {
-//        log.info("Command to subscribe: " + cmd);
-//        BlockingDeque<String> resultQueue = new LinkedBlockingDeque<>();
-//
-//        CompletableFuture.runAsync(() -> {
-//            shellResponse.clear();
-//            commander.println(cmd);
-//            commander.flush();
-//            if (commander.checkError()) {
-//                log.error("Error on send ssh command.");
-////                return ShellCommandResult.error("Error on send ssh command.");
-//            }
-//            try {
-//                shellResponse.take(); //eat input reply
-//                //wait for first data ( [sudo] handler )
-//                String nextLine = null;
-//                Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
-//                for (int i = 0; i < 5; i++) {
-//                    nextLine = shellResponse.peek();
-//                    if(nextLine!=null) {
-//                        break;
-//                    }
-//                    Thread.sleep(WAIT_PERIOD); //a little greater time period
-//                }
-//
-//                if(sudo && nextLine!=null && nextLine.startsWith("[sudo]")) {
-//                    commander.println(config.getSshPasswd());
-//                }
-//
-//                while (true) {
-//                    resultQueue.put(shellResponse.take());
-//                }
-//
-//                //TODO вместо таймаута использовать появление prompt мессажэ как признак того как исполнение закончилось
-//                // - но это не подходит при открытии telnet и прочих интерактивных. Возможно стоит параметризовать.
-//            } catch (InterruptedException e) {
-//                log.error(e);
-//                throw new CompletionException(e);
-//            }
-//        }, executor).exceptionally(throwable -> {
-//            log.info("End of subscription to result of: " + cmd);
-//            return null;
-//        });
-//        return resultQueue;
-//    }
+    public void executeEndlessCommand(String cmd, boolean sudo, final Consumer<String> lineConsumer) {
+        executor.execute(() -> {
+            try {
+                commandExecutionLock.lock();
+                shellResponse.clear();
+                commander.println(cmd);
+                commander.flush();
+                if (commander.checkError()) {
+                    log.error("Error on send ssh command.");
+                } else {
+                    try {
+                        shellResponse.take(); //eat input reply
+                        //wait for first data
+                        String nextLine = null;
+                        Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
+                        //wait for first line
+                        for (int i = 0; i < 5; i++) {
+                            nextLine = shellResponse.peek();
+                            if (nextLine != null) {
+                                break;
+                            }
+                            Thread.sleep(WAIT_PERIOD); //a little greater time period
+                        }
+                        //here endless while
+                        while (session.isConnected()) {
+                            String line = shellResponse.poll(LONG_COMMAND_RESULT_WAIT_PERIOD, TimeUnit.MICROSECONDS);
+                            if (!Strings.isNullOrEmpty(line)) {
+                                lineConsumer.accept(line);
+                            }
+                        }
+                    } catch (InterruptedException e) {
+                        log.error(e);
+                        throw new CompletionException(e);
+                    }
+                }
+            } finally {
+                commandExecutionLock.unlock();
+            }
+        });
+
+    }
 
     public void close() {
         try {

@@ -15,6 +15,6 @@ public class InfoCommand extends Command {
 
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
-        consumer.accept("Version:\t" + Bot.BOT_VERSION + "Started:\t" + bot.getStarted());
+        consumer.accept("Version:\t" + Bot.BOT_VERSION + " Started:\t" + bot.getStarted());
     }
 }

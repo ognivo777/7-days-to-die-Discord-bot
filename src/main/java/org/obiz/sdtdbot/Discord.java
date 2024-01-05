@@ -105,4 +105,12 @@ public class Discord implements ServerStartedListener, ServerStoppedListener, Di
         log.info("Event: DiscordMessage");
         textChannel.sendMessage(event.getMessage());
     }
+
+    public void sendMessageToChannel(String message) {
+        textChannel.sendMessage(message);
+    }
+
+//    public DiscordApi getApi() {
+//        return api;
+//    }
 }

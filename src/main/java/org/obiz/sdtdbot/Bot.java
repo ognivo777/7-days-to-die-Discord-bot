@@ -4,6 +4,8 @@ import com.google.common.eventbus.AsyncEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.obiz.sdtdbot.commands.*;
+import org.obiz.sdtdbot.loghandlers.PlayerJoinHandler;
+import org.obiz.sdtdbot.loghandlers.ServerStateChangeHandler;
 
 import java.time.Instant;
 import java.util.concurrent.Executors;
@@ -11,15 +13,19 @@ import java.util.concurrent.Executors;
 public class Bot {
     public static final String BOT_VERSION = "2022.10";
     private static final Logger log = LogManager.getLogger(Bot.class);
+
+    public static Bot botInsance;
     private final AsyncEventBus eventBus;
 
     private Instant started;
     private Config config;
     private ServerHostShell hostShell;
     private ServerHostShell hostShellForGame;
+    private ServerHostShell hostShellForLog;
     private ServerGameShell gameShell;
     private Discord discord;
     private boolean isStopped = false;
+    private ServerFileTailer logProcessor;
 
     public static void main(String[] args) {
         //todo добавить DI через guice - конфиги, шину
@@ -29,6 +35,7 @@ public class Bot {
     }
 
     public Bot(Config config) {
+        Bot.botInsance = this;
         this.started = Instant.now();
         this.config = config;
         eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
@@ -39,8 +46,9 @@ public class Bot {
         try {
             //init main mechanics
 
-            hostShell = new ServerHostShell(config); //need to game start and stop commands
-            hostShellForGame = new ServerHostShell(config); //base for game shell
+            hostShell = new ServerHostShell(config); //host SSH shell. Used for game start and stop commands
+            hostShellForGame = new ServerHostShell(config); //base for game shell ( run telnet localhost only)
+            hostShellForLog = new ServerHostShell(config); //base for game shell ( run telnet localhost only)
             gameShell = new ServerGameShell(config, hostShellForGame, eventBus);
 
             //it's important to run after init all shells!
@@ -62,10 +70,17 @@ public class Bot {
                         return null;
                     });
 
+            logProcessor = new ServerFileTailer(config, hostShellForLog, eventBus);
+            logProcessor.addHandler(new PlayerJoinHandler());
+            logProcessor.addHandler(new ServerStateChangeHandler());
+
 //            connect each other with event bus
             eventBus.register(hostShell);
             eventBus.register(hostShellForGame);
             eventBus.register(gameShell);
+
+            logProcessor.start();
+
         } catch (Exception e) {
             log.error("Error!", e);
             stop();
@@ -99,5 +114,9 @@ public class Bot {
 
     public String getStarted() {
         return started.toString();
+    }
+
+    public void sendMessage(String text) {
+        discord.sendMessageToChannel(text);
     }
 }
