@@ -21,9 +21,9 @@ public class ListPlayersCommand extends Command {
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
         shell.executeCommand("lpi").thenAccept(commandResult -> {
-            String gtResult = commandResult.lastLine().split("\n")[0].trim();
-            log.info("lpiResult: " + gtResult);
-            consumer.accept(gtResult);
+            String lpiResult = commandResult.toString();
+            log.info("lpiResult: " + lpiResult);
+            consumer.accept(lpiResult);
         }).exceptionally(throwable -> {
             log.error("Error on GT command: " +throwable.getMessage(), throwable);
             return null;
