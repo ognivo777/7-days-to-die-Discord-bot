@@ -3,7 +3,7 @@ package org.obiz.sdtdbot;
 import com.google.common.eventbus.AsyncEventBus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.obiz.sdtdbot.loghandlers.LogHandler;
+import org.obiz.sdtdbot.loghandlers.AbstractLogHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +14,7 @@ public class ServerFileTailer {
     private ServerHostShell shell;
     private AsyncEventBus eventBus;
 
-    private List<LogHandler> handlers = new ArrayList<>();
+    private List<AbstractLogHandler> handlers = new ArrayList<>();
 
     /** какие задачи выполняет? Мониторинг лога на предмет поиска евентов и отправки их в чат?
      */
@@ -38,7 +38,7 @@ public class ServerFileTailer {
             });
         });
     }
-    public void addHandler(LogHandler handler) {
+    public void addHandler(AbstractLogHandler handler) {
         handlers.add(handler);
     }
 }

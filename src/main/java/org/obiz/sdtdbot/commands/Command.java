@@ -60,7 +60,7 @@ public abstract class Command {
                 //role-based access control evaluations
                 boolean userAllowedByRole = false;
                 if(!roleName.isEmpty()) {
-                    log.debug("Role is not empty, try to chek for command <"+command+">");
+                    log.info("Role is not empty, try to chek for command <"+command+">");
                     List<Role> roles = slashCommandInteraction.getServer().get().getRolesByName(roleName);
                     if(roles.isEmpty()) {
                         log.error("Role with name <" + roleName + "> not found on server!");
@@ -72,7 +72,7 @@ public abstract class Command {
                 }
                 //finally make decision based on role and additional logic
                 if(userAllowedByRole && predicate.test(slashCommandInteraction)) {
-                    log.debug("Command received: " + command);
+                    log.info("Command received: " + command);
                     consume(slashCommandInteraction);
                 } else {
                     sendResponse(slashCommandInteraction, "Not allowed for you. Sorry :(");

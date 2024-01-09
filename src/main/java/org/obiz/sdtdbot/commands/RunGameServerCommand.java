@@ -15,6 +15,7 @@ public class RunGameServerCommand extends Command {
 
     public RunGameServerCommand(ServerHostShell shell) {
         super("run", "Start game server", Bot.getConfigInstance().getOpDiscordRole());
+        this.shell = shell;
     }
 
     @Override

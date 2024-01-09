@@ -43,7 +43,7 @@ public class Discord implements ServerStartedListener, ServerStoppedListener, Di
                     //text chan found
                     //todo ??
                     textChannel = tc;
-                    textChannel.sendMessage("Hi! I'm here!");
+                    //textChannel.sendMessage("Hi! I'm here!");
                     futureResult.complete(Discord.this);
                 }, () -> {
                     //text chan NOT found

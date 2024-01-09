@@ -73,7 +73,7 @@ public class Bot {
                     });
 
             logProcessor = new ServerFileTailer(config, hostShellForLog, eventBus);
-            logProcessor.addHandler(new PlayerJoinHandler());
+            logProcessor.addHandler(new PlayerJoinHandler(gameShell));
             logProcessor.addHandler(new ServerStateChangeHandler(eventBus));
 
 //            connect each other with event bus

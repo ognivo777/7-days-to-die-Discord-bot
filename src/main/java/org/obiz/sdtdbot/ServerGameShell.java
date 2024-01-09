@@ -41,6 +41,7 @@ public class ServerGameShell implements ServerStartedListener {
     }
 
     private void startWatchDog(ServerHostShell shell) {
+        //todo react to line "Connection closed by foreign host." in shell..
         timer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {

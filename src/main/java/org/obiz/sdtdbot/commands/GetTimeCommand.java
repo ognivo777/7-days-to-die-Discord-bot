@@ -5,6 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.javacord.api.interaction.SlashCommandInteraction;
 import org.obiz.sdtdbot.ServerGameShell;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -21,7 +22,12 @@ public class GetTimeCommand extends Command {
 
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
-        shell.executeCommand("gt").thenAccept(commandResult -> {
+        CompletableFuture<String> runCommandResult = runAndParse_GT_Command(shell);
+        runCommandResult.thenAccept(consumer);
+    }
+
+    public static CompletableFuture<String> runAndParse_GT_Command(ServerGameShell shell) {
+        CompletableFuture<String> runCommandResult = shell.executeCommand("gt").thenApply(commandResult -> {
             String gtResult = commandResult.lastLine().split("\n")[0].trim();
             log.info("gtResult: " + gtResult);
             Matcher m = gt_parse.matcher(gtResult);
@@ -36,10 +42,11 @@ public class GetTimeCommand extends Command {
                     gtResult += ". " + daysLeft + " days for red night.";
                 }
             }
-            consumer.accept(gtResult);
+            return gtResult;
         }).exceptionally(throwable -> {
-            log.error("Error on GT command: " +throwable.getMessage(), throwable);
+            log.error("Error on GT command: " + throwable.getMessage(), throwable);
             return null;
         });
+        return runCommandResult;
     }
 }

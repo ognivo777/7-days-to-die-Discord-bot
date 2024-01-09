@@ -4,7 +4,7 @@ import com.google.common.eventbus.AsyncEventBus;
 import org.obiz.sdtdbot.Bot;
 import org.obiz.sdtdbot.bus.Events;
 
-public class ServerStateChangeHandler extends LogHandler {
+public class ServerStateChangeHandler extends AbstractLogHandler {
     private AsyncEventBus eventBus;
     public ServerStateChangeHandler(AsyncEventBus eventBus) {
         super(line ->
