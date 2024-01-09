@@ -1,6 +1,7 @@
 package org.obiz.sdtdbot.loghandlers;
 
 import org.obiz.sdtdbot.Bot;
+import org.obiz.sdtdbot.bus.Events;
 
 public class PlayerJoinHandler extends LogHandler{
     public PlayerJoinHandler() {
@@ -10,7 +11,7 @@ public class PlayerJoinHandler extends LogHandler{
                 line.contains("disconnected after")||
                         line.contains("left the game")
                 , line -> {
-            Bot.botInsance.sendMessage(line);
+            Bot.getEventBusInstance().post(new Events.DiscordMessage(line));
         });
     }
 }

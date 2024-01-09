@@ -1,8 +1,10 @@
 package org.obiz.sdtdbot;
 
 import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.Subscribe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.obiz.sdtdbot.bus.Events;
 import org.obiz.sdtdbot.commands.*;
 import org.obiz.sdtdbot.loghandlers.PlayerJoinHandler;
 import org.obiz.sdtdbot.loghandlers.ServerStateChangeHandler;
@@ -14,7 +16,7 @@ public class Bot {
     public static final String BOT_VERSION = "2022.10";
     private static final Logger log = LogManager.getLogger(Bot.class);
 
-    public static Bot botInsance;
+    private static Bot botInsance;
     private final AsyncEventBus eventBus;
 
     private Instant started;
@@ -45,11 +47,10 @@ public class Bot {
         log.info("Version " + BOT_VERSION);
         try {
             //init main mechanics
-
-            hostShell = new ServerHostShell(config); //host SSH shell. Used for game start and stop commands
-            hostShellForGame = new ServerHostShell(config); //base for game shell ( run telnet localhost only)
-            hostShellForLog = new ServerHostShell(config); //base for game shell ( run telnet localhost only)
-            gameShell = new ServerGameShell(config, hostShellForGame, eventBus);
+            hostShell = new ServerHostShell("pure host"); //host SSH shell. Used for game start and stop commands
+            hostShellForGame = new ServerHostShell("host for telnet"); //base for game shell ( run telnet localhost only)
+            gameShell = new ServerGameShell(hostShellForGame);
+            hostShellForLog = new ServerHostShell("host for tail"); //base for game shell ( run telnet localhost only)
 
             //it's important to run after init all shells!
             new Discord(config).init()
@@ -59,9 +60,10 @@ public class Bot {
                         discord.addCommand(new InfoCommand(this));
                         discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
                         discord.addCommand(new GetTimeCommand(gameShell));
-                        discord.addCommand(new KickAllCommand(gameShell, config));
-                        discord.addCommand(new RunGameServerCommand(hostShell, config, eventBus));
-                        discord.addCommand(new KillGameServerCommand(gameShell, hostShell, config));
+                        discord.addCommand(new ListPlayersCommand(gameShell));
+                        discord.addCommand(new KickAllCommand(gameShell));
+                        discord.addCommand(new RunGameServerCommand(hostShell));
+                        discord.addCommand(new KillGameServerCommand(gameShell, hostShell));
                         eventBus.register(discord);
                     })
                     .exceptionally(throwable -> {
@@ -72,11 +74,12 @@ public class Bot {
 
             logProcessor = new ServerFileTailer(config, hostShellForLog, eventBus);
             logProcessor.addHandler(new PlayerJoinHandler());
-            logProcessor.addHandler(new ServerStateChangeHandler());
+            logProcessor.addHandler(new ServerStateChangeHandler(eventBus));
 
 //            connect each other with event bus
             eventBus.register(hostShell);
             eventBus.register(hostShellForGame);
+            eventBus.register(hostShellForLog);
             eventBus.register(gameShell);
 
             logProcessor.start();
@@ -88,7 +91,14 @@ public class Bot {
         return this;
     }
 
-    public void stop() {
+    @Subscribe
+    public void onEventBStopBot(Events.StopBot event) {
+        log.info("StopBot event: " + event.getReason());
+        stop();
+    }
+
+    private void stop() {
+        //todo use events to stop shells
         if(!isStopped) {
             isStopped = true;
             if (gameShell != null) {
@@ -116,7 +126,31 @@ public class Bot {
         return started.toString();
     }
 
-    public void sendMessage(String text) {
-        discord.sendMessageToChannel(text);
+    public Discord getDiscord() {
+        return discord;
+    }
+
+    public boolean isStopped() {
+        return isStopped;
+    }
+
+    public static Bot getInstance() {
+        return botInsance;
+    }
+
+    public AsyncEventBus getEventBus() {
+        return eventBus;
+    }
+
+    public Config getConfig() {
+        return config;
+    }
+
+    public static AsyncEventBus getEventBusInstance(){
+        return botInsance.getEventBus();
+    }
+
+    public static Config getConfigInstance() {
+        return botInsance.getConfig();
     }
 }

@@ -13,7 +13,7 @@ public abstract class AbstractGameControlCommand extends Command {
         super(command, description, roleName);
     }
 
-    protected CompletableFuture<Boolean> checkServerProcessAlive() {
+    protected CompletableFuture<Boolean> checkServerProcessStatus() {
         CompletableFuture<Boolean> result = new CompletableFuture<>();
         shell.executeCommand("ps -ef | grep --color=never 7DaysToDieServer", false).thenAccept(commandResult -> {
             String lines = commandResult.mergedLines();

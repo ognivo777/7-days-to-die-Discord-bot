@@ -5,6 +5,20 @@ public class Events {
     public static class ServerStarted {}
 
     public static class ServerStopped {}
+
+    public static class StopBot {
+        private final String reason;
+
+        public StopBot(String reason) {
+
+            this.reason = reason;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+    }
+
     public static class DiscordMessage {
         private String message;
 
@@ -17,4 +31,6 @@ public class Events {
         }
     }
 
+    public static class ServerNotStarted {
+    }
 }

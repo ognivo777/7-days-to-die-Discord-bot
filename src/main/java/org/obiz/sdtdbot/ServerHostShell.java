@@ -34,9 +34,12 @@ public class ServerHostShell {
     private Session session;
     private ChannelShell shell;
     private Config config;
+    private final String name;
 
-    public ServerHostShell(Config config) {
-        this.config = config;
+    public ServerHostShell(String name) {
+//        this.config = config;
+        Config config = Bot.getConfigInstance();
+        this.name = name;
         jSch = new JSch();
         try {
             session = jSch.getSession(config.getSshUser(), config.getHost(), config.getPort());
@@ -50,22 +53,22 @@ public class ServerHostShell {
 
             readShellOutThread = new Thread(() -> {
                 try {
-                    log.info("Constantly read output thread started.");
-                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(shell.getInputStream(), StandardCharsets.UTF_8.name()));
+                    log.info("Constantly read output thread started for '" + name + "'.");
+                    BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(shell.getInputStream(), StandardCharsets.UTF_8));
                     while (true) {
                         String line = bufferedReader.readLine();
                         if (line == null) {
                             Thread.sleep(WAIT_PERIOD);
                         } else if (line.isEmpty()) {
                         } else {
-                            log.debug("s: <" + line + ">");
+                            log.info("<" + name + "> out: <" + line + ">");
                             shellResponse.put(line);
                         }
                     }
                 } catch (IOException e) {
-                    log.error("Error read ssh output: " + e.getMessage(), e);
+                    log.error("Error read ssh output for '" + name + "': " + e.getMessage(), e);
                 } catch (InterruptedException e) {
-                    log.info("Read output thread stopped.");
+                    log.info("Read output thread stopped for '" + name + "'.");
                 }
             });
             readShellOutThread.start();
@@ -73,13 +76,13 @@ public class ServerHostShell {
             shell.connect();
 
             String line;
-            log.info("-------======= Ssh welcome messages =======-------");
+            log.info("-------======= Ssh welcome messages =======-------  for '" + name + "'");
             while ((line = shellResponse.poll(WAIT_PERIOD, TimeUnit.MILLISECONDS))!=null) {
                 log.info(line);
             }
 //            welcome = executeCommand("").get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS).get();
             prompt = executeCommand("", false).get(WAIT_PERIOD*10, TimeUnit.MILLISECONDS).lastLine();
-            log.info("welcome string = <" + prompt + ">");
+            log.info("'" + name + "' welcome string = <" + prompt + ">");
 
         } catch (JSchException | IOException | InterruptedException | ExecutionException | TimeoutException e) {
             log.error(e);
@@ -88,7 +91,7 @@ public class ServerHostShell {
     }
 
     public CompletableFuture<ShellCommandResult> executeCommand(String cmd, boolean sudo) {
-        log.info("Command to run on HOST Shell: " + cmd);
+        log.info("<" + name + "> Command to run on HOST Shell: " + cmd);
 
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -97,22 +100,11 @@ public class ServerHostShell {
                 commander.println(cmd);
                 commander.flush();
                 if (commander.checkError()) {
-                    log.error("Error on send ssh command.");
+                    log.error("<" + name + "> Error on send ssh command.");
                     return ShellCommandResult.error("Error on send ssh command.");
                 } else {
                     try {
-                        shellResponse.take(); //eat input reply
-                        //wait for first data
-                        String nextLine = null;
-                        Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
-                        //wait for first line
-                        for (int i = 0; i < 5; i++) {
-                            nextLine = shellResponse.peek();
-                            if (nextLine != null) {
-                                break;
-                            }
-                            Thread.sleep(WAIT_PERIOD); //a little greater time period
-                        }
+                        String nextLine = startReadCommandResult();
 
                         //if server asks for password - type them
                         if (sudo && nextLine != null && nextLine.startsWith("[sudo]")) {
@@ -123,16 +115,16 @@ public class ServerHostShell {
                         // - но это не подходит при открытии telnet и прочих интерактивных. Возможно стоит параметризовать.
                         List<String> lines = new ArrayList<>();
                         while (true) {
-                            String poll = shellResponse.poll(LONG_COMMAND_RESULT_WAIT_PERIOD, TimeUnit.MICROSECONDS);
-                            if (!Strings.isNullOrEmpty(poll)) {
-                                lines.add(poll);
+                            String nextLineFromOutput = shellResponse.poll(LONG_COMMAND_RESULT_WAIT_PERIOD, TimeUnit.MICROSECONDS);
+                            if (!Strings.isNullOrEmpty(nextLineFromOutput)) {
+                                lines.add(nextLineFromOutput);
                             } else {
                                 break;
                             }
                         }
                         return ShellCommandResult.success(lines);
                     } catch (InterruptedException e) {
-                        log.error(e);
+                        log.error("<" + name + "> Error:", e);
                         throw new CompletionException(e);
 //                    return ShellCommandResult.error("");
                     }
@@ -144,6 +136,22 @@ public class ServerHostShell {
         }, executor); //using local single thread executor guarantees one by one execution without collisions
     }
 
+    private String startReadCommandResult() throws InterruptedException {
+        shellResponse.take(); //eat input reply
+        //wait for first data
+        String nextLine = null;
+        Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
+        //wait for first line
+        for (int i = 0; i < 5; i++) {
+            nextLine = shellResponse.peek();
+            if (nextLine != null) {
+                break;
+            }
+            Thread.sleep(WAIT_PERIOD); //a little greater time period
+        }
+        return nextLine;
+    }
+
     public void executeEndlessCommand(String cmd, boolean sudo, final Consumer<String> lineConsumer) {
         executor.execute(() -> {
             try {
@@ -152,21 +160,10 @@ public class ServerHostShell {
                 commander.println(cmd);
                 commander.flush();
                 if (commander.checkError()) {
-                    log.error("Error on send ssh command.");
+                    log.error("<" + name + "> Error on send ssh command.");
                 } else {
                     try {
-                        shellResponse.take(); //eat input reply
-                        //wait for first data
-                        String nextLine = null;
-                        Thread.sleep(FIRST_BYTE_WAIT_PERIOD); //small-time period
-                        //wait for first line
-                        for (int i = 0; i < 5; i++) {
-                            nextLine = shellResponse.peek();
-                            if (nextLine != null) {
-                                break;
-                            }
-                            Thread.sleep(WAIT_PERIOD); //a little greater time period
-                        }
+                        startReadCommandResult();
                         //here endless while
                         while (session.isConnected()) {
                             String line = shellResponse.poll(LONG_COMMAND_RESULT_WAIT_PERIOD, TimeUnit.MICROSECONDS);
@@ -189,20 +186,19 @@ public class ServerHostShell {
     public void close() {
         try {
             executor.submit(() -> {
-                log.debug("executor.shutdown();");
+                log.debug("<" + name + "> executor.shutdown();");
                 executor.shutdown();
-                log.debug("shell.disconnect();");
+                log.debug("<" + name + "> shell.disconnect();");
                 shell.disconnect();
-                log.debug("session.disconnect();");
+                log.debug("<" + name + "> session.disconnect();");
                 session.disconnect();
-                log.debug("readShellOutThread.interrupt();");
+                log.debug("<" + name + "> readShellOutThread.interrupt();");
                 readShellOutThread.interrupt();
             }).get(3, TimeUnit.SECONDS); //todo уменьшить задержку! ждать 3 сек первой строки, переставать ждать если пришла/, а дальше ждать по пол секунды максимум
-            log.info("ServerHostShell close done.");
+            log.info("<" + name + "> ServerHostShell close done.");
         } catch (InterruptedException | ExecutionException e) {
-            log.error("Can't stop ssh connection: " + e.getMessage(), e);
-        } catch (TimeoutException e) {
-
+            log.error("<" + name + "> Can't stop ssh connection: " + e.getMessage(), e);
+        } catch (TimeoutException ignored) {
         }
     }
 
@@ -210,7 +206,7 @@ public class ServerHostShell {
         try {
             shell.sendSignal(signal);
         } catch (Exception e) {
-            log.error(e);
+            log.error("<" + name + "> Error on signal :" + signal, e);
             throw new RuntimeException(e);
         }
     }

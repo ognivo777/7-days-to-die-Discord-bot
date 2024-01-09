@@ -13,10 +13,8 @@ import org.obiz.sdtdbot.bus.ServerStartedListener;
 import org.obiz.sdtdbot.bus.ServerStoppedListener;
 import org.obiz.sdtdbot.commands.Command;
 
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class Discord implements ServerStartedListener, ServerStoppedListener, DiscordMessageListener {
     private static final Logger log = LogManager.getLogger(Discord.class);
