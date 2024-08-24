@@ -12,7 +12,9 @@ public class MessageOnServerHandler extends AbstractLogHandler{
     private static Pattern PARSE_MESSAGE_PATTERN = Pattern.compile(".+INF Chat \\(from '([^']+)', entity id '([^']+)', to '([^']+)'\\): (.+)");
     public MessageOnServerHandler() {
         super(line-> {
-            return line.contains("INF Chat (from") && line.contains("to 'Global'");
+            return line.contains("INF Chat (from")
+                    //&& line.contains("to 'Global'")
+                    ;
         }, line-> {
             EventBus eventBusInstance = Context.getContext().getEventBusInstance();
             BiMap<String, String> playersOnline = Context.getContext().getServerState().getPlayersOnline();
@@ -23,7 +25,7 @@ public class MessageOnServerHandler extends AbstractLogHandler{
                 String to = matcher.group(3);
                 String message = matcher.group(4);
                 String playerName = playersOnline.get(entityId);
-                eventBusInstance.post(new Events.DiscordMessage("New message from: *%s* to %s:\n`%s`".formatted(
+                eventBusInstance.post(new Events.DiscordMessage("New message from: **%s** to %s:\n`%s`".formatted(
                         playerName!=null?playerName:"<>",
                         to,
                         message

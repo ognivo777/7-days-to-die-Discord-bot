@@ -24,7 +24,7 @@ public class ListPlayersCommand extends Command {
     public static void runListPlayerCommand(Consumer<String> consumer, ServerGameShell shell) {
         shell.executeCommand("lpi").thenAccept(commandResult -> {
             String lpiResult = commandResult.toString();
-            log.info("lpiResult: " + lpiResult);
+            log.debug("lpiResult: \n" + lpiResult);
             consumer.accept(lpiResult);
         }).exceptionally(throwable -> {
             log.error("Error on GT command: " +throwable.getMessage(), throwable);

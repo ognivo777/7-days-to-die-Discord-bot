@@ -9,13 +9,13 @@ import java.util.regex.Pattern;
 
 public class PlayerLeftHandler extends AbstractLogHandler {
 
-    private static Pattern playerNameFromDisconnectedString = Pattern.compile(" Player (.+) disconnected after (.+) minutes");
+    private static Pattern playerNameFromDisconnectedString = Pattern.compile(".+ Player (.+) disconnected after (.+) minutes");
 
     public PlayerLeftHandler() {
         super(line ->
                         line.contains("disconnected after")
                 , line -> {
-                    Matcher matcher = playerNameFromDisconnectedString.matcher(line);
+                    Matcher matcher = playerNameFromDisconnectedString.matcher(line.strip());
                     if(matcher.matches()) {
                         String playerName = matcher.group(1);
                         String minutesInGame = matcher.group(2);

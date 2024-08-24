@@ -9,7 +9,7 @@ import java.util.regex.Pattern;
 
 public class PlayerJoinHandler extends AbstractLogHandler {
 
-    private static Pattern playerNameFromJionString = Pattern.compile("Player '(.+)' joined");
+    private static Pattern playerNameFromJionString = Pattern.compile(".+ INF GMSG: Player '([^']+)' joined the game");
 
     public PlayerJoinHandler() {
         super(line ->
