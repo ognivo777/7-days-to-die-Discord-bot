@@ -27,13 +27,13 @@ public class Server implements ServerStartedListener, ServerStoppedListener, Pla
     @Override
     @Subscribe
     public void onPlayerJoined(Events.PlayerJoined event) {
-
+        updatePlayersOnlineInfo();
     }
 
     @Override
     @Subscribe
     public void onPlayerLeft(Events.PlayerLeft event) {
-
+        updatePlayersOnlineInfo();
     }
 
     @Override
@@ -66,6 +66,7 @@ public class Server implements ServerStartedListener, ServerStoppedListener, Pla
 
     private void updatePlayersOnlineInfo() {
         ListPlayersCommand.runListPlayerCommand(line -> {
+            playersOnline.clear();
             Arrays.stream(line.split("\n"))
                     .map(playerNameFromLpiCommandOutput::matcher)
                     .filter(Matcher::matches)
