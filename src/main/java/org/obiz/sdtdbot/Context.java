@@ -2,7 +2,11 @@ package org.obiz.sdtdbot;
 
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
+import org.obiz.sdtdbot.entity.PlayerInfo;
 import org.obiz.sdtdbot.exceptions.ExceptionContextNotInitialazed;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Context {
     private static Context contextInstanse;
@@ -13,6 +17,8 @@ public class Context {
     private final Bot bot;
     private final AsyncEventBus eventBus;
     private Server server;
+
+    private List<PlayerInfo> playerInfoHistory = new ArrayList<>();
 
     private Context(AsyncEventBus eventBus, Config config, Discord discord, Bot bot, Server server) {
         this.eventBus = eventBus;
@@ -43,5 +49,9 @@ public class Context {
 
     public Server getServerState() {
         return server;
+    }
+
+    public List<PlayerInfo> getPlayersHistory() {
+        return playerInfoHistory;
     }
 }

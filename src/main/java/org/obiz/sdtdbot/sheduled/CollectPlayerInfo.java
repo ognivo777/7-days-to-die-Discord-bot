@@ -17,12 +17,14 @@ public class CollectPlayerInfo extends AbstractScheduledTask {
 
     protected void tick() {
         shell.executeCommand("lp").thenAccept(shellCommandResult -> {
+            List<PlayerInfo> playersHistory = Context.getContext().getPlayersHistory();
             List<String> lines = shellCommandResult.getResult();
             lines.stream()
                     .filter(s -> s.matches("^\\d+\\. id=.+"))
 //                    .map(s -> s.replaceAll("(\\d), ([-\\d])", "$1 $2"))
 //                    .map(s -> s.replaceAll("^\\d+\\. +", ""))
                     .map(PlayerInfo::new).forEach(playerInfo -> {
+                        playersHistory.add(playerInfo);
                         System.out.println("playerInfo = " + playerInfo);
                     });
         });

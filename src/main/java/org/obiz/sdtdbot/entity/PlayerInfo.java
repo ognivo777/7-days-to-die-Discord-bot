@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,7 +47,7 @@ public class PlayerInfo {
     private String ip;
     private int ping;
     private int minutesInGame=-1;
-    private Date serverLastSeen;
+    private Instant serverLastSeen;
 
     private static final Logger log = LogManager.getLogger(PlayerInfo.class);
 
@@ -77,6 +78,7 @@ public class PlayerInfo {
             crossid = matcher.group(17);
             ip = matcher.group(18);
             ping = Integer.parseInt(matcher.group(19));
+            serverLastSeen = Instant.now();
         } else {
             log.error("PATTERN DO NOT MATCH! Pattern:\n" + LP_PARSE_REGEXP + "\nData:\n" + data);
         }
@@ -183,7 +185,7 @@ public class PlayerInfo {
         return minutesInGame;
     }
 
-    public Date getServerLastSeen() {
+    public Instant getServerLastSeen() {
         return serverLastSeen;
     }
 
