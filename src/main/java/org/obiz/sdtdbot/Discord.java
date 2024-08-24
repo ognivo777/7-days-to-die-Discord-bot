@@ -85,7 +85,7 @@ public class Discord implements ServerStartedListener, ServerStoppedListener, Di
 
     @Override
     @Subscribe
-    public void onServerStart(Events.ServerStarted event) {
+    public void onServerStarted(Events.ServerStarted event) {
         log.info("Event: ServerStarted");
         textChannel.sendMessage("Server about to be started! :)");
     }
@@ -101,7 +101,7 @@ public class Discord implements ServerStartedListener, ServerStoppedListener, Di
     @Subscribe
     public void onDiscordMessage(Events.DiscordMessage event) {
         log.info("Event: DiscordMessage");
-        textChannel.sendMessage(event.getMessage());
+        textChannel.sendMessage(event.message());
     }
 
     public void sendMessageToChannel(String message) {

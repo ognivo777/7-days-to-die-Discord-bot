@@ -1,6 +1,7 @@
 package org.obiz.sdtdbot;
 
 import com.google.common.eventbus.AsyncEventBus;
+import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,7 +22,7 @@ public class ServerGameShell implements ServerStartedListener {
 //    private final Config config;
     private final Timer timer;
     private final ServerHostShell shell;
-    private final AsyncEventBus eventBus;
+    private final EventBus eventBus;
     private boolean isClosed = false;
     private final AtomicBoolean isAlive = new AtomicBoolean();
     private final AtomicInteger sameStateCounter = new AtomicInteger(3);
@@ -30,7 +31,7 @@ public class ServerGameShell implements ServerStartedListener {
         log.debug("Starting ServerGameShell!.....");
 //        this.config = config;
         this.shell = shell;
-        this.eventBus = Bot.getEventBusInstance();
+        this.eventBus = Context.getContext().getEventBusInstance();
         //todo добавить в параметры Consumer<String> для отправки сообщений
         openTelnetWithPassword();
 
@@ -71,7 +72,7 @@ public class ServerGameShell implements ServerStartedListener {
 
     private void openTelnetWithPassword() {
         try {
-            Config config = Bot.getConfigInstance();
+            Config config = Context.getContext().getConfigInstance();
             //todo проверить что мы в консоли сервера а не игры и статус элайв = фолс
             String s1 = shell.executeCommand("telnet 127.0.0.1 " + config.getTelnetPort(), false).get().lastLine();
             log.info("telnetWelcomeMessages: " + s1);
@@ -85,8 +86,9 @@ public class ServerGameShell implements ServerStartedListener {
         }
     }
 
+    @Override
     @Subscribe
-    public void onServerStart(Events.ServerStarted event) {
+    public void onServerStarted(Events.ServerStarted event) {
         log.info("Message <ServerStarted> received!");
         timer.schedule(new TimerTask() {
             @Override
@@ -126,5 +128,9 @@ public class ServerGameShell implements ServerStartedListener {
             }
         }
 
+    }
+
+    public boolean getIsAlive() {
+        return isAlive.get();
     }
 }

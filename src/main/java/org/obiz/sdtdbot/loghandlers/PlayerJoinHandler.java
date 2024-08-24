@@ -1,20 +1,30 @@
 package org.obiz.sdtdbot.loghandlers;
 
-import org.obiz.sdtdbot.Bot;
-import org.obiz.sdtdbot.ServerGameShell;
+import com.google.common.eventbus.EventBus;
+import org.obiz.sdtdbot.Context;
 import org.obiz.sdtdbot.bus.Events;
-import org.obiz.sdtdbot.commands.GetTimeCommand;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class PlayerJoinHandler extends AbstractLogHandler {
-    public PlayerJoinHandler(ServerGameShell gameShell) {
+
+    private static Pattern playerNameFromJionString = Pattern.compile("Player '(.+)' joined");
+
+    public PlayerJoinHandler() {
         super(line ->
-                line.contains("joined the game")||
-                line.contains("INF PlayerLogin:")||
-                line.contains("disconnected after")||
-                        line.contains("left the game")
+                line.contains("joined the game")
                 , line -> {
-            Bot.getEventBusInstance().post(new Events.DiscordMessage(line));
-            GetTimeCommand.runAndParse_GT_Command(gameShell).thenAccept(s -> Bot.getEventBusInstance().post(new Events.DiscordMessage(s)));
+                    Matcher matcher = playerNameFromJionString.matcher(line);
+                    if(matcher.matches()) {
+                        String playerName = matcher.group(1);
+                        EventBus eventBusInstance = Context.getContext().getEventBusInstance();
+                        //Похоже надо вынести это в отдельные классы
+                        eventBusInstance.post(new Events.DiscordMessage("**%s** join the game. Good luck!".formatted(playerName)));
+                        eventBusInstance.post(new Events.PlayerJoined(playerName));
+//                        GetTimeCommand.runAndParse_GT_Command(gameShell)
+//                                .thenAccept(s -> eventBusInstance.post(new Events.DiscordMessage(s)));
+                    }
         });
     }
 }

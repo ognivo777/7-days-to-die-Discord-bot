@@ -3,7 +3,7 @@ package org.obiz.sdtdbot.commands;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.interaction.SlashCommandInteraction;
-import org.obiz.sdtdbot.Bot;
+import org.obiz.sdtdbot.Context;
 import org.obiz.sdtdbot.ServerGameShell;
 
 import java.util.function.Consumer;
@@ -13,7 +13,7 @@ public class KickAllCommand extends Command {
     private ServerGameShell shell;
 
     public KickAllCommand(ServerGameShell shell) {
-        super("kickall", "Kick all players", Bot.getConfigInstance().getOpDiscordRole());
+        super("kickall", "Kick all players", Context.getContext().getConfigInstance().getOpDiscordRole());
         this.shell = shell;
     }
 

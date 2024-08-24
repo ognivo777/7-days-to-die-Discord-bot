@@ -6,8 +6,6 @@ import org.javacord.api.interaction.SlashCommandInteraction;
 import org.obiz.sdtdbot.ServerGameShell;
 
 import java.util.function.Consumer;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class ListPlayersCommand extends Command {
     private static final Logger log = LogManager.getLogger(ListPlayersCommand.class);
@@ -20,6 +18,10 @@ public class ListPlayersCommand extends Command {
 
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
+        runListPlayerCommand(consumer, shell);
+    }
+
+    public static void runListPlayerCommand(Consumer<String> consumer, ServerGameShell shell) {
         shell.executeCommand("lpi").thenAccept(commandResult -> {
             String lpiResult = commandResult.toString();
             log.info("lpiResult: " + lpiResult);

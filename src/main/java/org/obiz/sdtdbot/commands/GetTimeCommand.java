@@ -22,8 +22,7 @@ public class GetTimeCommand extends Command {
 
     @Override
     void createResponseContent(SlashCommandInteraction interaction, Consumer<String> consumer) {
-        CompletableFuture<String> runCommandResult = runAndParse_GT_Command(shell);
-        runCommandResult.thenAccept(consumer);
+        runAndParse_GT_Command(shell).thenAccept(consumer);
     }
 
     public static CompletableFuture<String> runAndParse_GT_Command(ServerGameShell shell) {

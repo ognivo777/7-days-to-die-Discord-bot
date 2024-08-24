@@ -33,12 +33,10 @@ public class ServerHostShell {
     private JSch jSch;
     private Session session;
     private ChannelShell shell;
-    private Config config;
     private final String name;
 
     public ServerHostShell(String name) {
-//        this.config = config;
-        Config config = Bot.getConfigInstance();
+        Config config = Context.getContext().getConfigInstance();
         this.name = name;
         jSch = new JSch();
         try {
@@ -49,7 +47,7 @@ public class ServerHostShell {
             session.connect();
 
             shell = (ChannelShell) session.openChannel("shell");
-            commander = new PrintStream(shell.getOutputStream(), true, StandardCharsets.UTF_8.name());
+            commander = new PrintStream(shell.getOutputStream(), true, StandardCharsets.UTF_8);
 
             readShellOutThread = new Thread(() -> {
                 try {
@@ -108,7 +106,7 @@ public class ServerHostShell {
 
                         //if server asks for password - type them
                         if (sudo && nextLine != null && nextLine.startsWith("[sudo]")) {
-                            commander.println(config.getSshPasswd());
+                            commander.println(Context.getContext().getConfigInstance().getSshPasswd());
                         }
 
                         //TODO вместо таймаута использовать появление prompt мессажэ как признак того как исполнение закончилось

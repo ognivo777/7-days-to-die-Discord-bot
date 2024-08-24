@@ -4,20 +4,24 @@ import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.Subscribe;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.obiz.sdtdbot.bus.BotStartPhaseOneListener;
 import org.obiz.sdtdbot.bus.Events;
+import org.obiz.sdtdbot.bus.StopBotListener;
 import org.obiz.sdtdbot.commands.*;
+import org.obiz.sdtdbot.loghandlers.MessageOnServerHandler;
 import org.obiz.sdtdbot.loghandlers.PlayerJoinHandler;
+import org.obiz.sdtdbot.loghandlers.PlayerLeftHandler;
 import org.obiz.sdtdbot.loghandlers.ServerStateChangeHandler;
+import org.obiz.sdtdbot.sheduled.CollectPlayerInfo;
 
 import java.time.Instant;
 import java.util.concurrent.Executors;
 
-public class Bot {
+public class Bot implements StopBotListener {
     public static final String BOT_VERSION = "2022.10";
     private static final Logger log = LogManager.getLogger(Bot.class);
-
-    private static Bot botInsance;
     private final AsyncEventBus eventBus;
+    private final Server server;
 
     private Instant started;
     private Config config;
@@ -37,10 +41,12 @@ public class Bot {
     }
 
     public Bot(Config config) {
-        Bot.botInsance = this;
         this.started = Instant.now();
         this.config = config;
         eventBus = new AsyncEventBus(Executors.newCachedThreadPool());
+        discord = new Discord(config);
+        server = new Server();
+        Context.initWith(config, eventBus, discord, server, this);
     }
 
     private Bot start() {
@@ -52,14 +58,26 @@ public class Bot {
             gameShell = new ServerGameShell(hostShellForGame);
             hostShellForLog = new ServerHostShell("host for tail"); //base for game shell ( run telnet localhost only)
 
+            // connect each other with event bus
+            eventBus.register(hostShell);
+            eventBus.register(hostShellForGame);
+            eventBus.register(hostShellForLog);
+            eventBus.register(gameShell);
+            eventBus.register(server);
+
+            eventBus.post(new Events.BotStartPhaseOne(hostShell, gameShell));
+            //todo init server
+
             //it's important to run after init all shells!
-            new Discord(config).init()
+            discord.init()
                     .thenAccept(d -> {
-                        discord = d;
+                        //discord = d;
                         //add commands.. -убрать в класс Discord? или и тут норм?
                         discord.addCommand(new InfoCommand(this));
                         discord.addCommand(new StopCommand(this, config.getOwnerDiscordID()));
                         discord.addCommand(new GetTimeCommand(gameShell));
+                        discord.addCommand(new SetTimeCommand(gameShell));
+                        discord.addCommand(new SayCommand(gameShell));
                         discord.addCommand(new ListPlayersCommand(gameShell));
                         discord.addCommand(new KickAllCommand(gameShell));
                         discord.addCommand(new RunGameServerCommand(hostShell));
@@ -73,14 +91,15 @@ public class Bot {
                     });
 
             logProcessor = new ServerFileTailer(config, hostShellForLog, eventBus);
-            logProcessor.addHandler(new PlayerJoinHandler(gameShell));
-            logProcessor.addHandler(new ServerStateChangeHandler(eventBus));
+            logProcessor.addHandler(new PlayerJoinHandler());
+            logProcessor.addHandler(new PlayerLeftHandler());
+            logProcessor.addHandler(new ServerStateChangeHandler());
+            logProcessor.addHandler(new MessageOnServerHandler());
 
-//            connect each other with event bus
-            eventBus.register(hostShell);
-            eventBus.register(hostShellForGame);
-            eventBus.register(hostShellForLog);
-            eventBus.register(gameShell);
+
+            CollectPlayerInfo collectPlayerInfo = new CollectPlayerInfo(gameShell, 5);
+            collectPlayerInfo.start(5, 3);
+            eventBus.register(collectPlayerInfo);
 
             logProcessor.start();
 
@@ -92,8 +111,8 @@ public class Bot {
     }
 
     @Subscribe
-    public void onEventBStopBot(Events.StopBot event) {
-        log.info("StopBot event: " + event.getReason());
+    public void onStopBot(Events.StopBot event) {
+        log.info("StopBot event: {}", event.reason());
         stop();
     }
 
@@ -134,23 +153,4 @@ public class Bot {
         return isStopped;
     }
 
-    public static Bot getInstance() {
-        return botInsance;
-    }
-
-    public AsyncEventBus getEventBus() {
-        return eventBus;
-    }
-
-    public Config getConfig() {
-        return config;
-    }
-
-    public static AsyncEventBus getEventBusInstance(){
-        return botInsance.getEventBus();
-    }
-
-    public static Config getConfigInstance() {
-        return botInsance.getConfig();
-    }
 }

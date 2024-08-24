@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.javacord.api.entity.message.MessageFlag;
 import org.javacord.api.interaction.SlashCommandInteraction;
-import org.obiz.sdtdbot.Bot;
+import org.obiz.sdtdbot.Context;
 import org.obiz.sdtdbot.ServerGameShell;
 import org.obiz.sdtdbot.ServerHostShell;
 
@@ -16,7 +16,7 @@ public class KillGameServerCommand extends AbstractGameControlCommand {
     private final AtomicBoolean serverIsEmpty = new AtomicBoolean(false);
 
     public KillGameServerCommand(ServerGameShell gameShell, ServerHostShell shell) {
-        super("kill", "Kill game server", Bot.getConfigInstance().getOpDiscordRole());
+        super("kill", "Kill game server", Context.getContext().getConfigInstance().getOpDiscordRole());
         this.gameShell = gameShell;
         this.shell = shell;
     }
@@ -58,7 +58,7 @@ public class KillGameServerCommand extends AbstractGameControlCommand {
                 if(isAlive) {
                     log.info("KILL: server process found. Try to kill using kill script.");
                     if(serverIsEmpty.get()) {
-                        shell.executeCommand(Bot.getConfigInstance().getKillServerCmd(), false).thenAccept(s -> {
+                        shell.executeCommand(Context.getContext().getConfigInstance().getKillServerCmd(), false).thenAccept(s -> {
                             log.info("Kill server logs:\n" + s.mergedLines());
                             consumer.accept("Done.");
                         });

@@ -1,36 +1,34 @@
 package org.obiz.sdtdbot.bus;
 
+import org.obiz.sdtdbot.ServerGameShell;
+import org.obiz.sdtdbot.ServerHostShell;
+
 public class Events {
 
     public static class ServerStarted {}
 
+    public record BotStartPhaseOne(
+            ServerHostShell hostShell,
+            ServerGameShell gameShell
+    ) {}
+
     public static class ServerStopped {}
 
-    public static class StopBot {
-        private final String reason;
+    public record PlayerJoined(
+            String playerName
+    ) {}
 
-        public StopBot(String reason) {
+    public record PlayerLeft(
+            String playerName
+    ) {}
 
-            this.reason = reason;
-        }
+    public record StopBot (
+            String reason
+    ) {}
 
-        public String getReason() {
-            return reason;
-        }
-    }
+    public record DiscordMessage(
+            String message
+    ) {}
 
-    public static class DiscordMessage {
-        private String message;
-
-        public DiscordMessage(String message) {
-            this.message = message;
-        }
-
-        public String getMessage() {
-            return message;
-        }
-    }
-
-    public static class ServerNotStarted {
-    }
+    public static class ServerNotStarted {}
 }

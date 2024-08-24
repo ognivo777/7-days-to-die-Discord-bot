@@ -8,7 +8,9 @@ import org.javacord.api.entity.permission.Role;
 
 import org.javacord.api.interaction.SlashCommand;
 import org.javacord.api.interaction.SlashCommandInteraction;
+import org.javacord.api.interaction.SlashCommandOption;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -19,6 +21,7 @@ public abstract class Command {
     private static final Logger log = LogManager.getLogger(Command.class);
 //    private DiscordApi api;
     protected String command;
+    protected List<SlashCommandOption> options = new ArrayList<>();
     protected String description;
     protected String roleName="";
     private SlashCommand slashCommand;
@@ -52,7 +55,7 @@ public abstract class Command {
      * @param api
      */
     public void start(DiscordApi api) {
-        slashCommand =  SlashCommand.with(command, description).createGlobal(api).join();
+        slashCommand =  SlashCommand.with(command, description, options).createGlobal(api).join();
         log.debug("Command '" + command + "' accepted!");
         api.addSlashCommandCreateListener(event -> {
             SlashCommandInteraction slashCommandInteraction = event.getSlashCommandInteraction();
@@ -81,6 +84,10 @@ public abstract class Command {
         });
 //        SlashCommand.with(command, description).createGlobal(api).thenAcceptAsync(slashCommand -> {
 //        });
+    }
+
+    public void addOption(SlashCommandOption option) {
+        options.add(option);
     }
 
     protected void consume(SlashCommandInteraction interaction) {
