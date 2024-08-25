@@ -1,5 +1,20 @@
 
 # Discord Bot for 7 Days to Die
+<!-- TOC -->
+* [Discord Bot for 7 Days to Die](#discord-bot-for-7-days-to-die)
+  * [Overview](#overview)
+  * [Features](#features)
+    * [Notifications:](#notifications)
+    * [Statistics:](#statistics)
+    * [Server Time:](#server-time)
+    * [In-Game Chat:](#in-game-chat)
+    * [Server Management:](#server-management)
+  * [Requirements](#requirements)
+  * [Installation and Setup](#installation-and-setup)
+  * [Usage](#usage)
+    * [Commands](#commands)
+  * [Contributing](#contributing)
+<!-- TOC -->
 ## Overview
 This Discord bot is designed to enhance your 7 Days to Die experience by providing a range of interactive features. It integrates seamlessly with your Discord server, offering notifications, statistics, and server management capabilities.
 
