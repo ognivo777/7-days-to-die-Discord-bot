@@ -37,18 +37,15 @@ jobs:
 
     - name: Build with Gradle Wrapper
       run: ./gradlew jar
-    - uses: release-drafter/release-drafter@v5
+    - uses: "marvinpinto/action-automatic-releases@latest"
       with:
-        config-name: release_drafter.yml
-        disable-autolabeler: false
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Release
-      uses: softprops/action-gh-release@v2
-      if: startsWith(github.ref, 'refs/tags/')
-      with:
-        files: |
-          build/libs/sdtdbot-1.0-SNAPSHOT.jar
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Development Build"
+          files: |
+            LICENSE.txt
+            *.jar
 
 
 
