@@ -64,12 +64,8 @@ jobs:
         distribution: 'temurin'
     - uses: release-drafter/release-drafter@v5
       with:
-          config-name: gradle.yml
+          config-name: release_drafter.yml
           disable-autolabeler: false
       env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-    # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
-    # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
-    - name: Generate and submit dependency graph
-      uses: gradle/actions/dependency-submission@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
