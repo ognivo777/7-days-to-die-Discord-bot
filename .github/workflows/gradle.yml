@@ -10,6 +10,8 @@ name: Java CI with Gradle
 on:
   push:
     branches: [ "master" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "master" ]
 
@@ -60,6 +62,12 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+    - uses: release-drafter/release-drafter@v5
+        with:
+          config-name: gradle.yml
+          disable-autolabeler: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
     # See: https://github.com/gradle/actions/blob/main/dependency-submission/README.md
