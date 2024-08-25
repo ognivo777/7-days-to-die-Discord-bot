@@ -5,11 +5,8 @@ import com.google.common.collect.HashBiMap;
 import com.google.common.eventbus.Subscribe;
 import org.obiz.sdtdbot.bus.*;
 import org.obiz.sdtdbot.commands.ListPlayersCommand;
-import org.obiz.sdtdbot.entity.PlayerInfo;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -17,9 +14,7 @@ import java.util.regex.Pattern;
 public class Server implements ServerStartedListener, ServerStoppedListener, PlayerJoinedListener, PlayerLeftListener, BotStartPhaseOneListener {
     private static Pattern playerNameFromLpiCommandOutput = Pattern.compile("\\d+\\. id=(\\d+), (.+)");
 
-    private Map<String, PlayerInfo> firstSeenStats = new HashMap<>();
     private BiMap<String, String> playersOnline = HashBiMap.create();
-    private ServerHostShell serverHostShell;
     private ServerGameShell gameShell;
     private AtomicBoolean initialized = new AtomicBoolean(false);
     private AtomicBoolean serverAlive = new AtomicBoolean(false);
@@ -56,7 +51,6 @@ public class Server implements ServerStartedListener, ServerStoppedListener, Pla
     @Override
     @Subscribe
     public void onBotStartPhaseOne(Events.BotStartPhaseOne event) {
-        serverHostShell = event.hostShell();
         gameShell = event.gameShell();
         initialized.set(true);
         serverAlive.set(true);

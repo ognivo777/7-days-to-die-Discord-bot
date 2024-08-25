@@ -9,7 +9,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 public class PlayerLeftHandler extends AbstractLogHandler {
 
@@ -41,12 +40,25 @@ public class PlayerLeftHandler extends AbstractLogHandler {
                             int levels = finished.getLevel() - started.getLevel();
                             int kills = finished.getZombies() - started.getZombies();
                             int score = finished.getScore() - started.getScore();
+
+                            double distance = 0;
+                            for (int i = 1; i < playerHistory.size(); i++) {
+                                PlayerInfo current = playerHistory.get(i);
+                                PlayerInfo previous = playerHistory.get(i-1);
+                                double step = Math.sqrt(
+                                    Math.pow(current.getPosX()-previous.getPosX(), 2) +
+                                    Math.pow(current.getPosZ()-previous.getPosZ(), 2)
+                                );
+                                distance+=step;
+                            }
+
                             eventBus.post(new Events.DiscordMessage(
-                                    ("**%s** progress: %d levels, %d kills, %d score.").formatted(
+                                    ("**%s** progress: %d levels, %d kills, %d score. And moved to %.2fm").formatted(
                                             playerName,
                                             levels,
                                             kills,
-                                            score
+                                            score,
+                                            distance
                                     )
                             ));
 
