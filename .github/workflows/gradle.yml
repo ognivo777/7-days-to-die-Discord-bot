@@ -63,10 +63,10 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
     - uses: release-drafter/release-drafter@v5
-        with:
+      with:
           config-name: gradle.yml
           disable-autolabeler: false
-        env:
+      env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     # Generates and submits a dependency graph, enabling Dependabot Alerts for all project dependencies.
