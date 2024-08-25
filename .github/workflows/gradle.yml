@@ -36,13 +36,19 @@ jobs:
       uses: gradle/actions/setup-gradle@af1da67850ed9a4cedd57bfd976089dd991e2582 # v4.0.0
 
     - name: Build with Gradle Wrapper
-      run: ./gradlew build
+      run: ./gradlew jar
     - uses: release-drafter/release-drafter@v5
       with:
         config-name: release_drafter.yml
         disable-autolabeler: false
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Release
+      uses: softprops/action-gh-release@v2
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          build/libs/sdtdbot-1.0-SNAPSHOT.jar
 
 
 
